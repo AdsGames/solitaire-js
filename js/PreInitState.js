@@ -8,7 +8,8 @@ export default class PreInitState extends Phaser.Scene {
   // Preload
   preload () {
     // Loading Screen
-    this.load.image('img_load', './assets/img/loading.png');
+    //this.load.baseURL = "https://localhost/test/SolitaireJS/";
+    this.load.image('img_load', 'assets/img/loading.png');
   }
       
   // Create
