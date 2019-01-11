@@ -7,8 +7,8 @@ export default class InitState extends Phaser.Scene {
   
   // Preload assets
   preload () {
-    //this.load.baseURL = "https://localhost/test/SolitaireJS/";
-    this.load.baseURL = "https://localhost/SolitaireJS/";
+    this.load.baseURL = "https://adsgames.net/games/files/solitaire/";
+    //this.load.baseURL = "https://localhost/SolitaireJS/";
     
     // Background
     this.add.image(550 / 2, 400 / 2, 'img_load');
@@ -50,16 +50,8 @@ export default class InitState extends Phaser.Scene {
         assetText.destroy();
     });
     
-    // Buttons
-    this.load.image('img_button_start', 'assets/img/button_start.png');
-    this.load.image('img_button_help', 'assets/img/button_help.png');
-    
     // Background
     this.load.image('img_background', 'assets/img/background.png');
-    this.load.image('img_help', 'assets/img/help.png');
-    
-    // Title
-    this.load.image('img_title', 'assets/img/title.png');
     
     // Cards
     this.load.image('img_card_1_0', 'assets/img/cards/AC.png');
