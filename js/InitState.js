@@ -8,6 +8,7 @@ export default class InitState extends Phaser.Scene {
   // Preload assets
   preload () {
     //this.load.baseURL = "https://localhost/test/SolitaireJS/";
+    this.load.baseURL = "https://localhost/SolitaireJS/";
     
     // Background
     this.add.image(550 / 2, 400 / 2, 'img_load');
