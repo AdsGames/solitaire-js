@@ -27,10 +27,8 @@ export default class Deck {
   // Deal cards
   deal(scene) {
     // Flip all back
-    for (var i = 0; i < 52; i++) {
-      this.cards[i].flipBack(scene);
-    }
-    
+    this.cards.map(card => card.flipBack(scene));
+
     // Set positions
     var x = 0;
     for (var i = 0; i < 7; i++) { 
@@ -71,13 +69,7 @@ export default class Deck {
     
     childrenArray.sort(
       function(a, b) {
-        if (a.position < b.position) {
-          return -1;
-        }
-        if (a.position > b.position) {
-          return 1;
-        }
-        return 0;
+        return (a.position < b.position) ? -1 : (a.position > b.position) ? 1 : 0
       }
     );
     
