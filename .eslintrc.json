@@ -23,6 +23,7 @@
     "new-cap": 0,
     "class-methods-use-this": 0,
     "sort-imports": 0,
-    "one-var": 0
+    "one-var": 0,
+    "max-lines-per-function": 0
   }
 }
