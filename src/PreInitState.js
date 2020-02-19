@@ -1,19 +1,15 @@
 import Phaser from "phaser";
 
+import { baseURL } from "./constants/loading";
+
 export default class PreInitState extends Phaser.Scene {
   constructor() {
     super({ active: true, key: "PreInitState" });
   }
 
   preload() {
-    // Loading Screen
-    this.load.baseURL =
-      window.location.toString().replace(/[^/]*$/gu, "") +
-      document
-        .querySelector('script[src$="main.js"]')
-        .getAttribute("src")
-        .replace("main.js", "");
-
+    // Set base url
+    this.load.baseURL = baseURL;
     this.load.image("img_load", "assets/img/loading.png");
   }
 

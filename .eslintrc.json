@@ -17,13 +17,12 @@
     "prettier/prettier": "warn",
     "no-magic-numbers": 0,
     "id-length": 0,
-    "no-magic-numbers": 0,
     "max-params": 0,
-    "max-statements": 0,
     "new-cap": 0,
     "class-methods-use-this": 0,
     "sort-imports": 0,
     "one-var": 0,
-    "max-lines-per-function": 0
+    "no-ternary": 0,
+    "max-statements": 0
   }
 }

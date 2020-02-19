@@ -18,49 +18,39 @@ export default class GameState extends Phaser.Scene {
     // Game state variables
     this.gameNumber = 1;
     this.score = 0;
-
-    // Drag children array
     this.dragChildren = [];
 
-    // Background
+    // Add background
     this.add.image(550 / 2, 0, "img_background");
 
-    // Deck
+    // Add deck
     this.deck = new Deck(this);
 
-    // Text
-    this.scoreText = this.add.text(450, 12, "", {
-      fill: "#FFF",
-      fontSize: "16px",
-    });
-    this.gameNumText = this.add.text(10, 12, "", {
-      fill: "#FFF",
-      fontSize: "16px",
-    });
+    this.createZones();
+    this.createInputListeners();
+    this.createButtons();
+    this.createText();
+  }
 
-    // Create zones
+  createZones() {
     Object.keys(Piles.pilePositions).forEach(k => {
       // Additional height for tableau
-      let addHeight = 0;
-      let addWidth = 0;
-      if (k.match(/tableau_*/u)) {
-        addHeight = 100;
-      } else if (k === "stock") {
-        addWidth = 20;
-      }
+      const addHeight = k.match(/tableau_*/u) ? 100 : 0;
+      const addWidth = k === "stock" ? 20 : 0;
 
       // Make zone
-      const zone = this.add.zone(
-        Piles.pilePositions[k].x + addWidth / 2,
-        Piles.pilePositions[k].y + addHeight / 2,
-        Piles.cardWidth + addWidth,
-        Piles.cardHeight + addHeight
-      );
-      zone.name = k;
-      zone.setRectangleDropZone(
-        Piles.cardWidth + addWidth,
-        Piles.cardHeight + addHeight
-      );
+      const zone = this.add
+        .zone(
+          Piles.pilePositions[k].x + addWidth / 2,
+          Piles.pilePositions[k].y + addHeight / 2,
+          Piles.cardWidth + addWidth,
+          Piles.cardHeight + addHeight
+        )
+        .setName(k)
+        .setRectangleDropZone(
+          Piles.cardWidth + addWidth,
+          Piles.cardHeight + addHeight
+        );
 
       // Draw zone
       if (k === "stock") {
@@ -69,16 +59,19 @@ export default class GameState extends Phaser.Scene {
       }
 
       // Drop zone visual
-      const graphics = this.add.graphics();
-      graphics.lineStyle(1, 0xffffff);
-      graphics.strokeRect(
-        zone.x - Piles.cardWidth / 2 - addWidth / 2,
-        zone.y - Piles.cardHeight / 2 - addHeight / 2,
-        Piles.cardWidth,
-        Piles.cardHeight
-      );
+      this.add
+        .graphics()
+        .lineStyle(1, 0xffffff)
+        .strokeRect(
+          zone.x - Piles.cardWidth / 2 - addWidth / 2,
+          zone.y - Piles.cardHeight / 2 - addHeight / 2,
+          Piles.cardWidth,
+          Piles.cardHeight
+        );
     });
+  }
 
+  createInputListeners() {
     // Start drag card
     this.input.on(
       "dragstart",
@@ -109,48 +102,64 @@ export default class GameState extends Phaser.Scene {
         gameObject instanceof Card && this.dragCard(gameObject, dragX, dragY),
       this
     );
+  }
 
+  createButtons() {
     // Redeal button
-    const reDealBack = this.add.graphics();
-    reDealBack.fillStyle(0xffffff, 1);
-    reDealBack.fillRect(10, 5, 80, 18);
+    this.add
+      .graphics()
+      .fillStyle(0xffffff, 1)
+      .fillRect(10, 5, 80, 18);
 
-    const reDealButton = this.add.text(12, 7, "Redeal", { fill: "#000" });
-    reDealButton.setInteractive();
-    reDealButton.on(
-      "pointerdown",
-      () => {
-        this.deck.deal(this);
-        this.winText.setVisible(false);
-      },
-      this
-    );
+    this.add
+      .text(12, 7, "Redeal", { fill: "#000" })
+      .setInteractive()
+      .on(
+        "pointerdown",
+        () => {
+          this.deck.deal(this);
+          this.winText.setVisible(false);
+        },
+        this
+      );
 
     // New deal button
-    const newDealBack = this.add.graphics();
-    newDealBack.fillStyle(0xffffff, 1);
-    newDealBack.fillRect(100, 5, 80, 18);
+    this.add
+      .graphics()
+      .fillStyle(0xffffff, 1)
+      .fillRect(100, 5, 80, 18);
 
-    const newDealButton = this.add.text(102, 7, "New Deal", { fill: "#000" });
-    newDealButton.setInteractive();
-    newDealButton.on(
-      "pointerdown",
-      () => {
-        this.deck.shuffle(this.deck.cards);
-        this.deck.deal(this);
-        this.winText.setVisible(false);
-      },
-      this
-    );
+    this.add
+      .text(102, 7, "New Deal", { fill: "#000" })
+      .setInteractive()
+      .on(
+        "pointerdown",
+        () => {
+          this.deck.shuffle(this.deck.cards);
+          this.deck.deal(this);
+          this.winText.setVisible(false);
+        },
+        this
+      );
+  }
 
-    // Win text
-    this.winText = this.add.text(
-      20,
-      this.cameras.main.height - 40,
-      "You Win!",
-      { fill: "#FFF", fontSize: "24px" }
-    );
-    this.winText.setVisible(false);
+  createText() {
+    this.scoreText = this.add.text(450, 12, "", {
+      fill: "#FFF",
+      fontSize: "16px",
+    });
+
+    this.gameNumText = this.add.text(10, 12, "", {
+      fill: "#FFF",
+      fontSize: "16px",
+    });
+
+    this.winText = this.add
+      .text(20, this.cameras.main.height - 40, "You Win!", {
+        fill: "#FFF",
+        fontSize: "24px",
+      })
+      .setVisible(false);
   }
 
   drawCard() {
@@ -172,8 +181,7 @@ export default class GameState extends Phaser.Scene {
       let position = 0;
 
       while (currentTop) {
-        currentTop.reposition("stock", position);
-        currentTop.flipBack(this);
+        currentTop.reposition("stock", position).flipBack(this);
         position += 1;
         currentTop = this.deck.topCard("discard");
       }
@@ -251,12 +259,10 @@ export default class GameState extends Phaser.Scene {
     }
   }
 
+  // eslint-disable-next-line
   dropCard(card, dropZone) {
     // Get top card on current stack
     const topCard = this.deck.topCard(dropZone.name);
-
-    // Keep old stack name
-    const pastStackName = card.pile;
 
     // Empty stack
     if (!topCard) {
@@ -300,7 +306,7 @@ export default class GameState extends Phaser.Scene {
     }
 
     // Flip top card on past stack
-    const topCardNew = this.deck.topCard(pastStackName);
+    const topCardNew = this.deck.topCard(card.pile);
     if (topCardNew && topCardNew !== card && !topCardNew.flipped) {
       topCardNew.flip(this);
       this.flipScore(topCardNew.pile);
