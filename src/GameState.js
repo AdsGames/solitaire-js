@@ -138,6 +138,7 @@ export default class GameState extends Phaser.Scene {
           this.deck.shuffle(this.deck.cards);
           this.deck.deal(this);
           this.winText.setVisible(false);
+          this.score = 0;
         },
         this
       );
