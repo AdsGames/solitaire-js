@@ -1,9 +1,19 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
-import Piles from "./Piles.js";
+import Piles from "./Piles";
 
 export default class Card extends Phaser.GameObjects.Sprite {
-  constructor(scene, suit, value) {
+  public suit: number = 0;
+
+  public value: number = 0;
+
+  public pile: string = "none";
+
+  public position: number = -1;
+
+  public flipped: boolean = false;
+
+  public constructor(scene: Phaser.Scene, suit: number, value: number) {
     // Create sprite
     super(scene, 0, 0, "img_card_back_green");
     scene.add.existing(this);
@@ -12,11 +22,6 @@ export default class Card extends Phaser.GameObjects.Sprite {
     this.suit = suit;
     this.value = value;
 
-    this.pile = "none";
-    this.position = -1;
-
-    this.flipped = false;
-
     // Width and Height
     this.setDisplaySize(Piles.cardWidth, Piles.cardHeight);
 
@@ -24,7 +29,7 @@ export default class Card extends Phaser.GameObjects.Sprite {
     this.setInteractive();
   }
 
-  reposition(pile, position) {
+  public reposition(pile: string, position: number): Card {
     this.pile = pile;
     this.position = position;
 
@@ -46,21 +51,23 @@ export default class Card extends Phaser.GameObjects.Sprite {
         Piles.pilePositions[this.pile].y
       );
     }
+
+    return this;
   }
 
-  flip(scene) {
+  public flip(scene: Phaser.Scene): void {
     this.setTexture(this.selectImage(this.suit, this.value));
     scene.input.setDraggable(this);
     this.flipped = true;
   }
 
-  flipBack(scene) {
+  public flipBack(scene: Phaser.Scene): void {
     this.setTexture("img_card_back_green");
     scene.input.setDraggable(this, false);
     this.flipped = false;
   }
 
-  selectImage(suit, value) {
+  public selectImage(suit: number, value: number): string {
     return `img_card_${value}_${suit}`;
   }
 }

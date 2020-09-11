@@ -1,10 +1,13 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
 class Piles {
-  constructor() {
-    this.cardWidth = 65;
-    this.cardHeight = 100;
+  public cardWidth: number = 65;
 
+  public cardHeight: number = 100;
+
+  public pilePositions: Record<string, Phaser.Math.Vector2> = {};
+
+  public constructor() {
     this.pilePositions = {
       discard: new Phaser.Math.Vector2(145, 85),
       stock: new Phaser.Math.Vector2(45, 85),
