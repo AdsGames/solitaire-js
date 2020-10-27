@@ -57,13 +57,13 @@ export default class Deck {
       .sort((a: Card, b: Card) => a.position - b.position);
   }
 
-  public topCard(pile: string): Card | undefined {
-    return this.cards.reduce((top: Card, card: Card) => {
-      if (card.pile === pile && card.position > top.position) {
+  public topCard(pile: string): Card | null {
+    return this.cards.reduce<Card|null>((top: Card | null, card: Card) => {
+      if (card.pile === pile && (!top || card.position > top.position)) {
         return card;
       }
       return top;
-    });
+    }, null);
   }
 
   public countCards(pile: string): number {

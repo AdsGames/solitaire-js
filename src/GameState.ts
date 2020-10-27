@@ -16,21 +16,16 @@ export default class GameState extends Phaser.Scene {
 
   private dragChildren: Card[] = [];
 
-  private deck: Deck;
+  private deck!: Deck;
 
-  private scoreText: Phaser.GameObjects.Text;
+  private scoreText!: Phaser.GameObjects.Text;
 
-  private gameNumText: Phaser.GameObjects.Text;
+  private gameNumText!: Phaser.GameObjects.Text;
 
-  private winText: Phaser.GameObjects.Text;
+  private winText!: Phaser.GameObjects.Text;
 
   public constructor() {
     super(sceneConfig);
-
-    this.deck = new Deck(this);
-    this.scoreText = this.add.text(0, 0, "");
-    this.gameNumText = this.add.text(0, 0, "");
-    this.winText = this.add.text(0, 0, "");
   }
 
   public create(): void {
@@ -207,7 +202,8 @@ export default class GameState extends Phaser.Scene {
       let position = 0;
 
       while (currentTop) {
-        currentTop.reposition("stock", position).flipBack(this);
+        currentTop.reposition("stock", position)
+        currentTop.flipBack(this);
         position += 1;
         currentTop = this.deck.topCard("discard");
       }
@@ -286,6 +282,7 @@ export default class GameState extends Phaser.Scene {
   public dropCard(card: Card, dropZone: Phaser.GameObjects.GameObject): void {
     // Get top card on current stack
     const topCard = this.deck.topCard(dropZone.name);
+    const cardPile = card.pile;
 
     // Empty stack
     if (!topCard) {
@@ -322,14 +319,13 @@ export default class GameState extends Phaser.Scene {
     }
 
     // Drop all other cards on top
-    for (let i = 0; i < this.dragChildren.length; i += 1) {
-      if (this.dragChildren[i] !== card) {
-        this.dragChildren[i].reposition(card.pile, card.position + i);
-      }
+
+    for (let i = 1; i < this.dragChildren.length; i += 1) {
+      this.dragChildren[i].reposition(card.pile, card.position + i);
     }
 
     // Flip top card on past stack
-    const topCardNew = this.deck.topCard(card.pile);
+    const topCardNew = this.deck.topCard(cardPile);
     if (topCardNew && topCardNew !== card && !topCardNew.flipped) {
       topCardNew.flip(this);
       this.flipScore(topCardNew.pile);

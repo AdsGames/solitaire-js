@@ -29,7 +29,7 @@ export default class Card extends Phaser.GameObjects.Sprite {
     this.setInteractive();
   }
 
-  public reposition(pile: string, position: number): Card {
+  public reposition(pile: string, position: number): void {
     this.pile = pile;
     this.position = position;
 
@@ -51,8 +51,6 @@ export default class Card extends Phaser.GameObjects.Sprite {
         Piles.pilePositions[this.pile].y
       );
     }
-
-    return this;
   }
 
   public flip(scene: Phaser.Scene): void {

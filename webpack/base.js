@@ -1,6 +1,7 @@
 const { DefinePlugin } = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 module.exports = {
   entry: {
@@ -9,12 +10,6 @@ module.exports = {
   },
   module: {
     rules: [
-      {
-        enforce: "pre",
-        test: /\.ts$/,
-        exclude: /node_modules/,
-        loader: "eslint-loader",
-      },
       {
         test: /\.ts$/,
         exclude: /node_modules/,
@@ -34,5 +29,6 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./src/index.ejs",
     }),
+    new ESLintPlugin({ extensions: 'ts' })
   ],
 };
