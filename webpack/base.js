@@ -6,7 +6,6 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 module.exports = {
   entry: {
     app: "./src/app.ts",
-    vendors: ["phaser"],
   },
   module: {
     rules: [
