@@ -1,22 +1,35 @@
 /* eslint-disable max-lines */
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
-import Deck from "./Deck.js";
-import Card from "./Card.js";
-import Piles from "./Piles.js";
+import Deck from "./Deck";
+import Card from "./Card";
+import Piles from "./Piles";
+
+const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
+  active: false,
+  key: "GameState",
+  visible: false,
+};
 
 export default class GameState extends Phaser.Scene {
-  constructor() {
-    super({
-      active: false,
-      key: "GameState",
-      type: Phaser.AUTO,
-    });
+  private score: number = 0;
+
+  private dragChildren: Card[] = [];
+
+  private deck!: Deck;
+
+  private scoreText!: Phaser.GameObjects.Text;
+
+  private gameNumText!: Phaser.GameObjects.Text;
+
+  private winText!: Phaser.GameObjects.Text;
+
+  public constructor() {
+    super(sceneConfig);
   }
 
-  create() {
+  public create(): void {
     // Game state variables
-    this.gameNumber = 1;
     this.score = 0;
     this.dragChildren = [];
 
@@ -32,8 +45,8 @@ export default class GameState extends Phaser.Scene {
     this.createText();
   }
 
-  createZones() {
-    Object.keys(Piles.pilePositions).forEach(k => {
+  public createZones(): void {
+    Object.keys(Piles.pilePositions).forEach((k: string) => {
       // Additional height for tableau
       const addHeight = k.match(/tableau_*/u) ? 100 : 0;
       const addWidth = k === "stock" ? 20 : 0;
@@ -71,45 +84,55 @@ export default class GameState extends Phaser.Scene {
     });
   }
 
-  createInputListeners() {
+  public createInputListeners(): void {
     // Start drag card
     this.input.on(
       "dragstart",
-      (pointer, gameObject) =>
-        gameObject instanceof Card && this.dragCardStart(gameObject),
+      (
+        _pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject
+      ) => gameObject instanceof Card && this.dragCardStart(gameObject),
       this
     );
 
     // End drag card
     this.input.on(
       "dragend",
-      (pointer, gameObject) => gameObject instanceof Card && this.dragCardEnd(),
+      (
+        _pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject
+      ) => gameObject instanceof Card && this.dragCardEnd(),
       this
     );
 
     // Drop on pile
     this.input.on(
       "drop",
-      (pointer, gameObject, dropZone) =>
-        gameObject instanceof Card && this.dropCard(gameObject, dropZone),
+      (
+        _pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject,
+        dropZone: Phaser.GameObjects.GameObject
+      ) => gameObject instanceof Card && this.dropCard(gameObject, dropZone),
       this
     );
 
     // Drag card
     this.input.on(
       "drag",
-      (pointer, gameObject, dragX, dragY) =>
+      (
+        _pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject,
+        dragX: number,
+        dragY: number
+      ) =>
         gameObject instanceof Card && this.dragCard(gameObject, dragX, dragY),
       this
     );
   }
 
-  createButtons() {
+  public createButtons(): void {
     // Redeal button
-    this.add
-      .graphics()
-      .fillStyle(0xffffff, 1)
-      .fillRect(10, 5, 80, 18);
+    this.add.graphics().fillStyle(0xffffff, 1).fillRect(10, 5, 80, 18);
 
     this.add
       .text(12, 7, "Redeal", { fill: "#000" })
@@ -124,10 +147,7 @@ export default class GameState extends Phaser.Scene {
       );
 
     // New deal button
-    this.add
-      .graphics()
-      .fillStyle(0xffffff, 1)
-      .fillRect(100, 5, 80, 18);
+    this.add.graphics().fillStyle(0xffffff, 1).fillRect(100, 5, 80, 18);
 
     this.add
       .text(102, 7, "New Deal", { fill: "#000" })
@@ -144,7 +164,7 @@ export default class GameState extends Phaser.Scene {
       );
   }
 
-  createText() {
+  public createText(): void {
     this.scoreText = this.add.text(450, 12, "", {
       fill: "#FFF",
       fontSize: "16px",
@@ -163,7 +183,7 @@ export default class GameState extends Phaser.Scene {
       .setVisible(false);
   }
 
-  drawCard() {
+  public drawCard(): void {
     // Get top card on current stack
     const topCard = this.deck.topCard("stock");
 
@@ -182,7 +202,8 @@ export default class GameState extends Phaser.Scene {
       let position = 0;
 
       while (currentTop) {
-        currentTop.reposition("stock", position).flipBack(this);
+        currentTop.reposition("stock", position)
+        currentTop.flipBack(this);
         position += 1;
         currentTop = this.deck.topCard("discard");
       }
@@ -193,13 +214,13 @@ export default class GameState extends Phaser.Scene {
     }
   }
 
-  flipScore(cardStack) {
+  public flipScore(cardStack: string): void {
     if (cardStack.match(/tableau_*/u)) {
       this.score += 5;
     }
   }
 
-  dropScore(zoneStack, cardStack) {
+  public dropScore(zoneStack: string, cardStack: string): void {
     // Waste to tableau
     if (cardStack === "discard" && zoneStack.match(/tableau_*/u)) {
       this.score += 5;
@@ -227,7 +248,7 @@ export default class GameState extends Phaser.Scene {
     }
   }
 
-  dragCardStart(card) {
+  public dragCardStart(card: Card): void {
     // Populate drag children
     this.dragChildren = [];
     if (card.pile.match(/tableau_*/u)) {
@@ -242,17 +263,14 @@ export default class GameState extends Phaser.Scene {
     }
   }
 
-  dragCardEnd() {
+  public dragCardEnd(): void {
     // Drop all other cards on top
-    for (let i = 0; i < this.dragChildren.length; i += 1) {
-      this.dragChildren[i].reposition(
-        this.dragChildren[i].pile,
-        this.dragChildren[i].position
-      );
-    }
+    this.dragChildren.forEach((child: Card) =>
+      child.reposition(child.pile, child.position)
+    );
   }
 
-  dragCard(card, dragX, dragY) {
+  public dragCard(_card: Card, dragX: number, dragY: number): void {
     // Set positions
     for (let i = 0; i < this.dragChildren.length; i += 1) {
       this.dragChildren[i].x = dragX;
@@ -261,9 +279,10 @@ export default class GameState extends Phaser.Scene {
   }
 
   // eslint-disable-next-line
-  dropCard(card, dropZone) {
+  public dropCard(card: Card, dropZone: Phaser.GameObjects.GameObject): void {
     // Get top card on current stack
     const topCard = this.deck.topCard(dropZone.name);
+    const cardPile = card.pile;
 
     // Empty stack
     if (!topCard) {
@@ -300,21 +319,20 @@ export default class GameState extends Phaser.Scene {
     }
 
     // Drop all other cards on top
-    for (let i = 0; i < this.dragChildren.length; i += 1) {
-      if (this.dragChildren[i] !== card) {
-        this.dragChildren[i].reposition(card.pile, card.position + i);
-      }
+
+    for (let i = 1; i < this.dragChildren.length; i += 1) {
+      this.dragChildren[i].reposition(card.pile, card.position + i);
     }
 
     // Flip top card on past stack
-    const topCardNew = this.deck.topCard(card.pile);
+    const topCardNew = this.deck.topCard(cardPile);
     if (topCardNew && topCardNew !== card && !topCardNew.flipped) {
       topCardNew.flip(this);
       this.flipScore(topCardNew.pile);
     }
   }
 
-  update() {
+  public update(): void {
     // Ensure score is within range
     if (this.score < 0) {
       this.score = 0;

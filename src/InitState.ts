@@ -1,15 +1,21 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
 // Card images
 import { images } from "./constants/assets";
 import { baseURL } from "./constants/loading";
 
+const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
+  active: false,
+  key: "InitState",
+  visible: false,
+};
+
 export default class InitState extends Phaser.Scene {
-  constructor() {
-    super({ active: false, key: "InitState" });
+  public constructor() {
+    super(sceneConfig);
   }
 
-  preload() {
+  public preload(): void {
     // Set base url
     this.load.baseURL = baseURL;
 
@@ -36,13 +42,13 @@ export default class InitState extends Phaser.Scene {
 
     assetText.setOrigin(0.5, 0.5);
 
-    this.load.on("progress", value => {
+    this.load.on("progress", (value: number) => {
       progressBar.clear();
       progressBar.fillStyle(0x000000, 1);
       progressBar.fillRect(217, 272, 106 * value, 6);
     });
 
-    this.load.on("fileprogress", file =>
+    this.load.on("fileprogress", (file: { key: string }) =>
       assetText.setText(`Loading asset: ${file.key}`)
     );
 
@@ -53,10 +59,12 @@ export default class InitState extends Phaser.Scene {
     });
 
     // Images
-    images.forEach(({ key, file }) => this.load.image(key, file));
+    images.forEach(({ key, file }: { key: string; file: string }) =>
+      this.load.image(key, file)
+    );
   }
 
-  create() {
+  public create(): void {
     this.scene.start("GameState");
   }
 }
