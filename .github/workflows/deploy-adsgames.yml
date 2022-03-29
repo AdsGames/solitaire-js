@@ -44,6 +44,6 @@ jobs:
     - name: Push build
       run: |
         echo ${{ steps.tag_name.outputs.branch }}
-        s3cmd sync --recursive --acl-public dist s3://ads-games/uploads/games/solitairejs/1.0
+        s3cmd sync --recursive --acl-public dist s3://ads-games/uploads/games/solitairejs/1.0/
 
 
