@@ -28,6 +28,10 @@ jobs:
     - name: Build
       run: yarn build
       
+    - name: Get tag
+      id: vars
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      
     - name: Set up S3cmd cli tool
       uses: s3-actions/s3cmd@v1.2.0
       with:
@@ -38,6 +42,6 @@ jobs:
 
     - name: Push build
       run: |
-        s3cmd sync --recursive --acl-public dist/* s3://ads-games/games/${{ env.GAME_ID }}/${{ env.GITHUB_REF_NAME }}/
+        s3cmd sync --recursive --acl-public dist/* s3://ads-games/games/${{ env.GAME_ID }}/${{ steps.vars.outputs.tag }}/
 
 
