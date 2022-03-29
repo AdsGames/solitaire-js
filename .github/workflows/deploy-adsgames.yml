@@ -4,13 +4,13 @@ on:
   push:
     tags:
       - v*
-  pull_request:
-    branches:
-      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    env:
+      GAME_ID: solitairejs
 
     steps:
     - name: Checkout code
@@ -36,14 +36,8 @@ jobs:
         access_key: ${{ secrets.LINODE_BUCKET_ACCESS_KEY }}
         secret_key: ${{ secrets.LINODE_BUCKET_SECRET_KEY }}
 
-    - name: Get branch name
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
-      id: tag_name
-        
     - name: Push build
       run: |
-        echo ${{ steps.tag_name.outputs.branch }}
-        s3cmd sync --recursive --acl-public dist/* s3://ads-games/uploads/games/solitairejs/1.0/
+        s3cmd sync --recursive --acl-public dist/* s3://ads-games/games/${{ env.GAME_ID }}/${{ env.GITHUB_REF_NAME }}/
 
 
