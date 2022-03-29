@@ -1,0 +1,49 @@
+name: Deploy to A.D.S. Games
+
+on:
+  push:
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Use Node.js 12
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12
+        cache: yarn
+      
+    - name: Install dependencies
+      run: yarn --frozen-lockfile
+        
+    - name: Build
+      run: yarn build
+      
+    - name: Set up S3cmd cli tool
+      uses: s3-actions/s3cmd@v1.2.0
+      with:
+        provider: linode
+        region: 'us-east-1'
+        access_key: ${{ secrets.LINODE_BUCKET_ACCESS_KEY }}
+        secret_key: ${{ secrets.LINODE_BUCKET_SECRET_KEY }}
+
+    - name: Get branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF##*/})"
+      id: tag_name
+        
+    - name: Push build
+      run: |
+        echo ${{ steps.tag_name.outputs.branch }}
+        s3cmd sync --recursive --acl-public dist s3://adsgames/uploads/games/solitairejs/1.0
+
+
