@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /* eslint-disable max-lines */
 import * as Phaser from "phaser";
 
@@ -67,7 +68,13 @@ export default class GameState extends Phaser.Scene {
 
       // Draw zone
       if (k === "stock") {
-        zone.on("pointerdown", () => this.drawCard(), this);
+        zone.on(
+          "pointerdown",
+          () => {
+            this.drawCard();
+          },
+          this
+        );
         zone.setDepth(99);
       }
 
@@ -91,7 +98,11 @@ export default class GameState extends Phaser.Scene {
       (
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject
-      ) => gameObject instanceof Card && this.dragCardStart(gameObject),
+      ) => {
+        if (gameObject instanceof Card) {
+          this.dragCardStart(gameObject);
+        }
+      },
       this
     );
 
@@ -101,7 +112,11 @@ export default class GameState extends Phaser.Scene {
       (
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject
-      ) => gameObject instanceof Card && this.dragCardEnd(),
+      ) => {
+        if (gameObject instanceof Card) {
+          this.dragCardEnd();
+        }
+      },
       this
     );
 
@@ -112,7 +127,11 @@ export default class GameState extends Phaser.Scene {
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject,
         dropZone: Phaser.GameObjects.GameObject
-      ) => gameObject instanceof Card && this.dropCard(gameObject, dropZone),
+      ) => {
+        if (gameObject instanceof Card) {
+          this.dropCard(gameObject, dropZone);
+        }
+      },
       this
     );
 
@@ -124,8 +143,11 @@ export default class GameState extends Phaser.Scene {
         gameObject: Phaser.GameObjects.GameObject,
         dragX: number,
         dragY: number
-      ) =>
-        gameObject instanceof Card && this.dragCard(gameObject, dragX, dragY),
+      ) => {
+        if (gameObject instanceof Card) {
+          this.dragCard(gameObject, dragX, dragY);
+        }
+      },
       this
     );
   }
@@ -135,7 +157,7 @@ export default class GameState extends Phaser.Scene {
     this.add.graphics().fillStyle(0xffffff, 1).fillRect(10, 5, 80, 18);
 
     this.add
-      .text(12, 7, "Redeal", { fill: "#000" })
+      .text(12, 7, "Redeal", { color: "#000" })
       .setInteractive()
       .on(
         "pointerdown",
@@ -150,7 +172,7 @@ export default class GameState extends Phaser.Scene {
     this.add.graphics().fillStyle(0xffffff, 1).fillRect(100, 5, 80, 18);
 
     this.add
-      .text(102, 7, "New Deal", { fill: "#000" })
+      .text(102, 7, "New Deal", { color: "#000" })
       .setInteractive()
       .on(
         "pointerdown",
@@ -166,18 +188,18 @@ export default class GameState extends Phaser.Scene {
 
   public createText(): void {
     this.scoreText = this.add.text(450, 12, "", {
-      fill: "#FFF",
+      color: "#FFF",
       fontSize: "16px",
     });
 
     this.gameNumText = this.add.text(10, 12, "", {
-      fill: "#FFF",
+      color: "#FFF",
       fontSize: "16px",
     });
 
     this.winText = this.add
       .text(20, this.cameras.main.height - 40, "You Win!", {
-        fill: "#FFF",
+        color: "#FFF",
         fontSize: "24px",
       })
       .setVisible(false);
@@ -202,7 +224,7 @@ export default class GameState extends Phaser.Scene {
       let position = 0;
 
       while (currentTop) {
-        currentTop.reposition("stock", position)
+        currentTop.reposition("stock", position);
         currentTop.flipBack(this);
         position += 1;
         currentTop = this.deck.topCard("discard");
@@ -265,9 +287,9 @@ export default class GameState extends Phaser.Scene {
 
   public dragCardEnd(): void {
     // Drop all other cards on top
-    this.dragChildren.forEach((child: Card) =>
-      child.reposition(child.pile, child.position)
-    );
+    this.dragChildren.forEach((child: Card) => {
+      child.reposition(child.pile, child.position);
+    });
   }
 
   public dragCard(_card: Card, dragX: number, dragY: number): void {
