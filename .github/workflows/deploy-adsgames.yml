@@ -8,9 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
-    env:
-      GAME_ID: solitairejs
 
     steps:
     - name: Checkout code
@@ -27,21 +24,19 @@ jobs:
         
     - name: Build
       run: yarn build
-      
-    - name: Get tag
-      id: vars
-      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-      
-    - name: Set up S3cmd cli tool
-      uses: s3-actions/s3cmd@v1.2.0
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
+    - name: Deploy to A.D.S. Games
+      uses: adsgames/deploy-to-adsgames@main
       with:
-        provider: linode
-        region: 'us-east-1'
-        access_key: ${{ secrets.LINODE_BUCKET_ACCESS_KEY }}
-        secret_key: ${{ secrets.LINODE_BUCKET_SECRET_KEY }}
-
-    - name: Push build
-      run: |
-        s3cmd sync --recursive --acl-public dist/* s3://ads-games/games/${{ env.GAME_ID }}/${{ steps.vars.outputs.tag }}/
-
+        project-id: solitaire
+        version: ${{ steps.get_version.outputs.VERSION }}
+        build-dir: dist
+        platform: WEB
+        bucket-access-key: ${{ secrets.LINODE_BUCKET_ACCESS_KEY }}
+        bucket-secret-key: ${{ secrets.LINODE_BUCKET_SECRET_KEY }}
+        api-key: ${{ secrets.ADSGAMES_API_KEY }}
 
