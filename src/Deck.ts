@@ -1,16 +1,17 @@
 import Card from "./Card";
+import { NUM_CARDS, Suit } from "./constants/deck";
+import { PileId, TABLEAU_PILES } from "./constants/table";
 
-const NUM_SUITS = 4;
-const NUM_VALUES = 14;
+const NUM_VALUES = 13;
 
 export default class Deck {
   public cards: Card[] = [];
 
   public constructor(scene: Phaser.Scene) {
-    for (let i = 0; i < NUM_SUITS; i += 1) {
-      for (let t = 1; t < NUM_VALUES; t += 1) {
-        this.cards.push(new Card(scene, i, t));
-      }
+    for (let i = 1; i < NUM_VALUES + 1; i += 1) {
+      Object.values(Suit).forEach((t) => {
+        this.cards.push(new Card(scene, t, i));
+      });
     }
 
     this.shuffle(this.cards);
@@ -25,9 +26,9 @@ export default class Deck {
 
     // Set positions
     let x = 0;
-    for (let i = 0; i < 7; i += 1) {
+    for (let i = 0; i < TABLEAU_PILES.length; i += 1) {
       for (let t = 0; t < i + 1; t += 1) {
-        this.cards[x].reposition(`tableau_${i}`, t);
+        this.cards[x].reposition(TABLEAU_PILES[i], t);
 
         if (i === t) {
           this.cards[x].flip(scene);
@@ -38,8 +39,8 @@ export default class Deck {
     }
 
     // Rest go in stack
-    for (let i = x; i < 52; i += 1) {
-      this.cards[i].reposition("stock", i - x);
+    for (let i = x; i < NUM_CARDS; i += 1) {
+      this.cards[i].reposition(PileId.Stock, i - x);
     }
   }
 
@@ -53,22 +54,23 @@ export default class Deck {
 
   public cardChildren(card: Card): Card[] {
     return this.cards
-      .flatMap((curr: Card) =>
-        curr.pile === card.pile && curr.position >= card.position ? [curr] : []
+      .filter(
+        (curr: Card) =>
+          curr.pile === card.pile && curr.position >= card.position
       )
       .sort((a: Card, b: Card) => a.position - b.position);
   }
 
-  public topCard(pile: string): Card | null {
-    return this.cards.reduce<Card | null>((top: Card | null, card: Card) => {
-      if (card.pile === pile && (!top || card.position > top.position)) {
-        return card;
-      }
-      return top;
-    }, null);
+  public topCard(pile: PileId): Card | null {
+    return (
+      this.cards
+        .filter((curr: Card) => curr.pile === pile)
+        .sort((a: Card, b: Card) => a.position - b.position)
+        .pop() ?? null
+    );
   }
 
-  public countCards(pile: string): number {
+  public countCards(pile: PileId): number {
     return this.cards.reduce(
       (acc: number, card: Card) => (card.pile === pile ? acc + 1 : acc),
       0

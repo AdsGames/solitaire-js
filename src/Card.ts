@@ -1,21 +1,33 @@
 import * as Phaser from "phaser";
-
-import Piles from "./Piles";
+import type { Suit } from "./constants/deck";
+import {
+  CARD_BACK_INDEX,
+  STACK_OFFSET,
+  SPRITE_CARD_WIDTH,
+  SUIT_IMAGE_INDEX,
+  CARD_DIMENSIONS,
+} from "./constants/deck";
+import {
+  FOUNDATION_PILES,
+  PileId,
+  PILE_POSITIONS,
+  TABLEAU_PILES,
+} from "./constants/table";
 
 export default class Card extends Phaser.GameObjects.Sprite {
-  public suit: number = 0;
+  public suit: Suit;
 
-  public value: number = 0;
+  public value: number;
 
-  public pile: string = "none";
+  public pile = PileId.None;
 
   public position: number = -1;
 
   public flipped: boolean = false;
 
-  public constructor(scene: Phaser.Scene, suit: number, value: number) {
+  public constructor(scene: Phaser.Scene, suit: Suit, value: number) {
     // Create sprite
-    super(scene, 0, 0, "img_card_back_green");
+    super(scene, 0, 0, "img_cards", CARD_BACK_INDEX);
     scene.add.existing(this);
 
     // Suit and Value
@@ -23,49 +35,49 @@ export default class Card extends Phaser.GameObjects.Sprite {
     this.value = value;
 
     // Width and Height
-    this.setDisplaySize(Piles.cardWidth, Piles.cardHeight);
+    this.setDisplaySize(CARD_DIMENSIONS.width, CARD_DIMENSIONS.height);
 
     // Click event
     this.setInteractive();
   }
 
-  public reposition(pile: string, position: number): void {
+  public reposition(pile: PileId, position: number): void {
     this.pile = pile;
     this.position = position;
 
     this.setDepth(this.position + 10);
 
-    if (this.pile === "stock" || this.pile === "discard") {
+    if (this.pile === PileId.Stock || this.pile === PileId.Discard) {
       this.setPosition(
-        Piles.pilePositions[this.pile].x + position,
-        Piles.pilePositions[this.pile].y
+        PILE_POSITIONS[this.pile].x + position,
+        PILE_POSITIONS[this.pile].y
       );
-    } else if (this.pile.match(/tableau_*/u)) {
+    } else if (TABLEAU_PILES.includes(this.pile)) {
       this.setPosition(
-        Piles.pilePositions[this.pile].x,
-        Piles.pilePositions[this.pile].y + position * 10
+        PILE_POSITIONS[this.pile].x,
+        PILE_POSITIONS[this.pile].y + position * STACK_OFFSET
       );
-    } else if (this.pile.match(/foundation_*/u)) {
+    } else if (FOUNDATION_PILES.includes(this.pile)) {
       this.setPosition(
-        Piles.pilePositions[this.pile].x,
-        Piles.pilePositions[this.pile].y
+        PILE_POSITIONS[this.pile].x,
+        PILE_POSITIONS[this.pile].y
       );
     }
   }
 
   public flip(scene: Phaser.Scene): void {
-    this.setTexture(this.selectImage(this.suit, this.value));
+    this.setTexture("img_cards", this.getSpriteIndex(this.suit, this.value));
     scene.input.setDraggable(this);
     this.flipped = true;
   }
 
   public flipBack(scene: Phaser.Scene): void {
-    this.setTexture("img_card_back_green");
+    this.setTexture("img_cards", CARD_BACK_INDEX);
     scene.input.setDraggable(this, false);
     this.flipped = false;
   }
 
-  public selectImage(suit: number, value: number): string {
-    return `img_card_${value}_${suit}`;
+  public getSpriteIndex(suit: Suit, value: number): number {
+    return SUIT_IMAGE_INDEX[suit] * SPRITE_CARD_WIDTH + value - 1;
   }
 }
