@@ -1,3 +1,4 @@
 webpack/
 dist/
 .eslintrc.js
+vite.config.ts

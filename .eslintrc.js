@@ -25,12 +25,11 @@ module.exports = {
     "one-var": 0,
     "no-ternary": 0,
     "max-statements": 0,
-
     "no-console": "warn",
-
     "@typescript-eslint/no-magic-numbers": 0,
     "@typescript-eslint/no-inferrable-types": 0,
     "@typescript-eslint/prefer-readonly-parameter-types": 0,
     "@typescript-eslint/prefer-regexp-exec": 0,
+    "@typescript-eslint/naming-convention": 0,
   },
 };

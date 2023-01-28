@@ -1,8 +1,9 @@
 import * as Phaser from "phaser";
 
 // Card images
-import { images } from "./constants/assets";
+import { images, spritesheets } from "./constants/assets";
 import { baseURL } from "./constants/loading";
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./constants/screen";
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   active: false,
@@ -15,12 +16,13 @@ export default class InitState extends Phaser.Scene {
     super(sceneConfig);
   }
 
+  // eslint-disable-next-line max-lines-per-function
   public preload(): void {
     // Set base url
     this.load.baseURL = baseURL;
 
     // Background
-    this.add.image(550 / 2, 400 / 2, "img_load");
+    this.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "img_load");
 
     const progressBox = this.add.graphics();
     progressBox.fillStyle(0xaaaaaa, 0.8);
@@ -59,9 +61,12 @@ export default class InitState extends Phaser.Scene {
     });
 
     // Images
-    images.forEach(({ key, file }: { key: string; file: string }) =>
-      this.load.image(key, file)
-    );
+    images.forEach(({ key, file }) => this.load.image(key, file));
+
+    // Spritesheets
+    spritesheets.forEach(({ file, frameHeight, frameWidth, key }) => {
+      this.load.spritesheet(key, file, { frameHeight, frameWidth });
+    });
   }
 
   public create(): void {
