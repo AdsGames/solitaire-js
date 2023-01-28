@@ -21,7 +21,7 @@ jobs:
 
       - run: yarn build
 
-      - uses: adsgames/deploy-to-adsgames@v1
+      - uses: adsgames/deploy-to-adsgames@v1.1.0
         with:
           project-id: solitaire
           build-dir: dist
