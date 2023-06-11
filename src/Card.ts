@@ -1,11 +1,11 @@
 import * as Phaser from "phaser";
-import type { Suit } from "./constants/deck";
 import {
   CARD_BACK_INDEX,
   STACK_OFFSET,
   SPRITE_CARD_WIDTH,
   SUIT_IMAGE_INDEX,
   CARD_DIMENSIONS,
+  type Suit,
 } from "./constants/deck";
 import {
   FOUNDATION_PILES,
