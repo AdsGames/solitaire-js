@@ -14,6 +14,9 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [PreInitState, InitState, GameState],
   type: Phaser.AUTO,
   width: SCREEN_WIDTH,
+  scale: {
+    mode: Phaser.Scale.FIT,
+  },
 };
 
 export const game = new Phaser.Game(config);
