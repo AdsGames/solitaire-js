@@ -2,7 +2,7 @@ import * as Phaser from "phaser";
 
 // Card images
 import { images, spritesheets } from "./constants/assets";
-import { baseURL } from "./constants/loading";
+import { textStyle } from "./constants/font";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./constants/screen";
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
@@ -16,11 +16,7 @@ export default class InitState extends Phaser.Scene {
     super(sceneConfig);
   }
 
-  // eslint-disable-next-line max-lines-per-function
   public preload(): void {
-    // Set base url
-    this.load.baseURL = baseURL;
-
     // Background
     this.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "img_load");
 
@@ -33,10 +29,7 @@ export default class InitState extends Phaser.Scene {
     const { height, width } = this.cameras.main;
 
     const assetText = this.make.text({
-      style: {
-        color: "#000000",
-        font: "12px monospace",
-      },
+      style: textStyle(8, "#000000"),
       text: "",
       x: width / 2,
       y: height / 2 + 100,
@@ -61,7 +54,9 @@ export default class InitState extends Phaser.Scene {
     });
 
     // Images
-    images.forEach(({ key, file }) => this.load.image(key, file));
+    images.forEach(({ key, file }) => {
+      this.load.image(key, file);
+    });
 
     // Spritesheets
     spritesheets.forEach(({ file, frameHeight, frameWidth, key }) => {

@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error"
+  },
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "no-console": ["warn", { "allow": ["warn"] }],
+    "typescript/prefer-readonly-parameter-types": "off",
+    "max-lines": "off",
+    "max-lines-per-function": "off"
+  },
+  "ignorePatterns": ["dist/", "vite.config.ts"]
+}

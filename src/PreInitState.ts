@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 
-import { baseURL } from "./constants/loading";
+import { FONT_FILE, FONT_KEY } from "./constants/font";
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   active: false,
@@ -14,9 +14,8 @@ export default class PreInitState extends Phaser.Scene {
   }
 
   public preload(): void {
-    // Set base url
-    this.load.baseURL = baseURL;
     this.load.image("img_load", "assets/img/loading.png");
+    this.load.font(FONT_KEY, FONT_FILE);
   }
 
   public create(): void {

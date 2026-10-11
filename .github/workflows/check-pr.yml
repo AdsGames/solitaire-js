@@ -6,12 +6,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
         with:
-          node-version: 18
-          cache: "yarn"
-      - run: yarn --frozen-lockfile
-      - run: yarn lint
-      - run: yarn format:check
-      - run: yarn build
+          runtime: node@24
+          cache: true
+          require-lockfile: true
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm build
