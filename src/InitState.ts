@@ -18,11 +18,26 @@ export default class InitState extends Phaser.Scene {
 
   public preload(): void {
     // Background
-    this.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "img_load");
+    const image = this.add.image(
+      SCREEN_WIDTH / 2,
+      SCREEN_HEIGHT / 2,
+      "img_load"
+    );
+    image.setScale(SCREEN_WIDTH / image.width, SCREEN_HEIGHT / image.height);
+
+    const progressBarWidth = 110;
+    const progressBarHeight = 10;
+    const progressBarX = SCREEN_WIDTH / 2 - progressBarWidth / 2;
+    const progressBarY = SCREEN_HEIGHT * 0.75 - progressBarHeight / 2;
 
     const progressBox = this.add.graphics();
     progressBox.fillStyle(0xaaaaaa, 0.8);
-    progressBox.fillRect(215, 270, 110, 10);
+    progressBox.fillRect(
+      progressBarX,
+      progressBarY,
+      progressBarWidth,
+      progressBarHeight
+    );
 
     const progressBar = this.add.graphics();
 
@@ -40,7 +55,12 @@ export default class InitState extends Phaser.Scene {
     this.load.on("progress", (value: number) => {
       progressBar.clear();
       progressBar.fillStyle(0x000000, 1);
-      progressBar.fillRect(217, 272, 106 * value, 6);
+      progressBar.fillRect(
+        progressBarX + 2,
+        progressBarY + 2,
+        (progressBarWidth - 4) * value,
+        progressBarHeight - 4
+      );
     });
 
     this.load.on("fileprogress", (file: { key: string }) =>
