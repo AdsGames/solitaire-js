@@ -8,6 +8,7 @@ import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./constants/screen";
 const config: Phaser.Types.Core.GameConfig = {
   antialias: false,
   antialiasGL: false,
+  roundPixels: true,
   backgroundColor: "#000",
   height: SCREEN_HEIGHT,
   parent: "game-container",
@@ -16,6 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
   width: SCREEN_WIDTH,
   scale: {
     mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
 };
 

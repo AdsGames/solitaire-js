@@ -1,13 +1,26 @@
-/* eslint-disable max-lines-per-function */
-/* eslint-disable max-lines */
 import * as Phaser from "phaser";
 
-import Deck from "./Deck";
 import Card from "./Card";
-import { FOUNDATION_PILES, PileId, TABLEAU_PILES } from "./constants/table";
-import { STACK_DRAG_OFFSET, SUIT_COLOR } from "./constants/deck";
-import { Pile } from "./Pile";
+import Deck, { RECYCLE_SCORE, type Snapshot, scoreMove } from "./Deck";
+import { STACK_DRAG_OFFSET } from "./constants/deck";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./constants/screen";
+import {
+  ALL_PILES,
+  PileId,
+  TABLE_LEFT,
+  TOP_ROW_Y,
+  columnX,
+} from "./constants/table";
+import { MAX_DEAL, MIN_DEAL, isValidDeal, randomDeal } from "./deal";
+import { Pile } from "./Pile";
+import { type Stats, recordLoss, recordWin } from "./stats";
+import {
+  BUTTON_GAP,
+  Panel,
+  cascade,
+  createButton,
+  createStatusText,
+} from "./ui";
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   active: false,
@@ -15,334 +28,399 @@ const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   visible: false,
 };
 
+const DOUBLE_CLICK_MS = 350;
+const DRAG_THRESHOLD = 4;
+
+interface HistoryEntry {
+  board: Snapshot;
+  moves: number;
+  score: number;
+}
+
+const formatTime = (ms: number): string => {
+  const seconds = Math.floor(ms / 1000);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+};
+
+const dealFromHash = (): number | null => {
+  const n = Number(window.location.hash.slice(1));
+  return isValidDeal(n) ? n : null;
+};
+
 export default class GameState extends Phaser.Scene {
-  private score: number = 0;
+  private deck!: Deck;
+
+  private dealNumber = 0;
+
+  private moves = 0;
+
+  private score = 0;
+
+  private startTime: number | null = null;
+
+  private finalTime = 0;
+
+  private won = false;
+
+  private history: HistoryEntry[] = [];
 
   private dragChildren: Card[] = [];
 
-  private deck!: Deck;
+  private lastClick: { card: Card; time: number } | null = null;
 
-  private scoreText!: Phaser.GameObjects.Text;
+  private statusText!: Phaser.GameObjects.Text;
 
-  private winText!: Phaser.GameObjects.Text;
+  private dealLabel!: Phaser.GameObjects.Text;
+
+  private panel!: Panel;
 
   public constructor() {
     super(sceneConfig);
   }
 
   public create(): void {
-    // Game state variables
-    this.score = 0;
-    this.dragChildren = [];
-
-    // Add background
     this.add.image(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, "img_background");
 
-    // Add deck
-    this.deck = new Deck(this);
-
-    this.createZones();
-    this.createInputListeners();
-    this.createButtons();
-    this.createText();
-  }
-
-  public createZones(): void {
-    Object.values(PileId).forEach((pileId) => {
+    ALL_PILES.forEach((pileId) => {
       const pile = new Pile(this, pileId);
       this.add.existing(pile);
 
-      // Draw zone
-      if (pile.pileId === PileId.Stock) {
-        pile.on(
-          "pointerdown",
-          () => {
-            this.drawCard();
-          },
-          this
-        );
-        pile.setDepth(99);
+      if (pileId === PileId.Stock) {
+        pile.on("pointerdown", () => {
+          this.drawCard();
+        });
       }
     });
+
+    this.deck = new Deck(this);
+    this.panel = new Panel(this);
+
+    this.createInputListeners();
+    this.createButtons();
+
+    this.statusText = createStatusText(this, columnX(2), TOP_ROW_Y);
+
+    this.startDeal(dealFromHash() ?? randomDeal());
   }
 
-  public createInputListeners(): void {
-    // Start drag card
+  public update(): void {
+    this.statusText.setText(
+      `SCORE\n${this.score}\nTIME\n${formatTime(this.elapsed())}`
+    );
+  }
+
+  private createInputListeners(): void {
+    this.input.dragDistanceThreshold = DRAG_THRESHOLD;
+
     this.input.on(
       "dragstart",
-      (
-        _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
-        if (gameObject instanceof Card) {
-          this.dragCardStart(gameObject);
+      (_pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject) => {
+        if (obj instanceof Card) {
+          this.dragCardStart(obj);
         }
-      },
-      this
+      }
     );
 
-    // End drag card
-    this.input.on(
-      "dragend",
-      (
-        _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
-        if (gameObject instanceof Card) {
-          this.dragCardEnd();
-        }
-      },
-      this
-    );
-
-    // Drop on pile
-    this.input.on(
-      "drop",
-      (
-        _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject,
-        dropZone: Phaser.GameObjects.GameObject
-      ) => {
-        if (gameObject instanceof Card) {
-          this.dropCard(gameObject, dropZone);
-        }
-      },
-      this
-    );
-
-    // Drag card
     this.input.on(
       "drag",
       (
         _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject,
+        obj: Phaser.GameObjects.GameObject,
         dragX: number,
         dragY: number
       ) => {
-        if (gameObject instanceof Card) {
-          this.dragCard(gameObject, dragX, dragY);
+        if (obj instanceof Card) {
+          this.dragCard(dragX, dragY);
         }
-      },
-      this
+      }
+    );
+
+    this.input.on(
+      "drop",
+      (
+        _pointer: Phaser.Input.Pointer,
+        obj: Phaser.GameObjects.GameObject,
+        zone: Phaser.GameObjects.GameObject
+      ) => {
+        if (obj instanceof Card && zone instanceof Pile) {
+          this.dropCards(zone.pileId);
+        }
+      }
+    );
+
+    this.input.on(
+      "dragend",
+      (_pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject) => {
+        if (obj instanceof Card) {
+          this.dragCardEnd();
+        }
+      }
+    );
+
+    // A tap is a press and release without moving far enough to drag
+    this.input.on(
+      "gameobjectup",
+      (pointer: Phaser.Input.Pointer, obj: Phaser.GameObjects.GameObject) => {
+        if (obj instanceof Card && pointer.getDistance() < DRAG_THRESHOLD) {
+          this.tapCard(obj, pointer);
+        }
+      }
     );
   }
 
-  public createButtons(): void {
-    // Redeal button
-    this.add.graphics().fillStyle(0xffffff, 1).fillRect(10, 10, 80, 18);
-
-    this.add
-      .text(12, 12, "Redeal", { color: "#000" })
-      .setInteractive()
-      .on(
-        "pointerdown",
+  private createButtons(): void {
+    const buttons: [string, () => void][] = [
+      [
+        "Redeal",
         () => {
-          this.deck.deal(this);
-          this.winText.setVisible(false);
-          this.score = 0;
+          this.startDeal(this.dealNumber);
         },
-        this
-      );
-
-    // New deal button
-    this.add.graphics().fillStyle(0xffffff, 1).fillRect(100, 10, 80, 18);
-
-    this.add
-      .text(102, 12, "New Deal", { color: "#000" })
-      .setInteractive()
-      .on(
-        "pointerdown",
+      ],
+      [
+        "New Deal",
         () => {
-          this.deck.shuffle(this.deck.cards);
-          this.deck.deal(this);
-          this.winText.setVisible(false);
-          this.score = 0;
+          this.startDeal(randomDeal());
         },
-        this
-      );
-  }
+      ],
+      [
+        "#1000000",
+        () => {
+          this.selectDeal();
+        },
+      ],
+      [
+        "Undo",
+        () => {
+          this.undo();
+        },
+      ],
+    ];
 
-  public createText(): void {
-    this.scoreText = this.add.text(700, 12, "", {
-      color: "#FFF",
-      fontSize: "16px",
+    let x = TABLE_LEFT;
+    buttons.forEach(([label, onClick], i) => {
+      const button = createButton(this, x, label, onClick);
+      if (i === 2) {
+        this.dealLabel = button.label;
+      }
+      x += button.width + BUTTON_GAP;
     });
-
-    this.winText = this.add
-      .text(20, this.cameras.main.height - 40, "You Win!", {
-        color: "#FFF",
-        fontSize: "24px",
-      })
-      .setVisible(false);
   }
 
-  public drawCard(): void {
-    // Get top card on current stack
-    const topCard = this.deck.topCard(PileId.Stock);
+  private selectDeal(): void {
+    const answer = window.prompt(
+      `Deal number (${MIN_DEAL}-${MAX_DEAL})`,
+      String(this.dealNumber)
+    );
+    if (answer === null) {
+      return;
+    }
 
-    // Empty stack
-    if (topCard) {
-      const topCardDisc = this.deck.topCard(PileId.Discard);
-      if (topCardDisc) {
-        topCardDisc.flipBack(this);
-        topCard.reposition(PileId.Discard, topCardDisc.position + 1);
-      } else {
-        topCard.reposition(PileId.Discard, 0);
-      }
-      topCard.flip(this);
-    } else {
-      let currentTop = this.deck.topCard(PileId.Discard);
-      let position = 0;
-
-      while (currentTop) {
-        currentTop.reposition(PileId.Stock, position);
-        currentTop.flipBack(this);
-        position += 1;
-        currentTop = this.deck.topCard(PileId.Discard);
-      }
-
-      if (position > 0) {
-        this.score -= 100;
-      }
+    const n = Number(answer.trim());
+    if (isValidDeal(n)) {
+      this.startDeal(n);
     }
   }
 
-  public flipScore(cardStack: PileId): void {
-    if (TABLEAU_PILES.includes(cardStack)) {
-      this.score += 5;
-    }
-  }
-
-  public dropScore(zoneStack: PileId, cardStack: PileId): void {
-    // Waste to tableau
-    if (cardStack === PileId.Discard && TABLEAU_PILES.includes(zoneStack)) {
-      this.score += 5;
+  private startDeal(dealNumber: number): void {
+    // Leaving a game in progress counts as a loss
+    if (this.moves > 0 && !this.won) {
+      recordLoss();
     }
 
-    // Waste to foundation
-    else if (
-      cardStack === PileId.Discard &&
-      FOUNDATION_PILES.includes(zoneStack)
-    ) {
-      this.score += 10;
-    }
+    this.dealNumber = dealNumber;
+    this.dealLabel.setText(`#${dealNumber}`);
+    window.history.replaceState(null, "", `#${dealNumber}`);
 
-    // Tableau to foundation
-    else if (
-      TABLEAU_PILES.includes(cardStack) &&
-      FOUNDATION_PILES.includes(zoneStack)
-    ) {
-      this.score += 10;
-    }
-
-    // Foundation to tableau
-    else if (
-      FOUNDATION_PILES.includes(cardStack) &&
-      TABLEAU_PILES.includes(zoneStack)
-    ) {
-      this.score -= 15;
-    }
-  }
-
-  public dragCardStart(card: Card): void {
-    // Populate drag children
+    this.moves = 0;
+    this.score = 0;
+    this.startTime = null;
+    this.finalTime = 0;
+    this.won = false;
+    this.history = [];
     this.dragChildren = [];
-    if (TABLEAU_PILES.includes(card.pile)) {
-      this.dragChildren = this.deck.cardChildren(card);
-    } else {
-      this.dragChildren.push(card);
-    }
+    this.panel.hide();
 
-    // Set depths
-    for (let i = 0; i < this.dragChildren.length; i += 1) {
-      this.dragChildren[i].setDepth(100 + i);
-    }
+    this.deck.deal(dealNumber);
+    this.deck.layoutAll(false);
+    this.afterMove();
+
+    // Automatic moves on the opening deal are part of the deal, not scored
+    this.score = 0;
   }
 
-  public dragCardEnd(): void {
-    // Drop all other cards on top
-    this.dragChildren.forEach((child: Card) => {
-      child.reposition(child.pile, child.position);
+  private drawCard(): void {
+    if (this.won) {
+      return;
+    }
+
+    const entry = this.historyEntry();
+    const result = this.deck.draw();
+    if (result === null) {
+      return;
+    }
+
+    this.history.push(entry);
+    this.countMove(result === "recycle" ? RECYCLE_SCORE : 0);
+    this.deck.layout(PileId.Stock, true);
+    this.deck.layout(PileId.Waste, true);
+    this.afterMove();
+  }
+
+  private dragCardStart(card: Card): void {
+    this.dragChildren = [];
+    if (this.won) {
+      return;
+    }
+
+    const cards = this.deck.pickUp(card);
+    if (!cards) {
+      card.flash();
+      return;
+    }
+
+    this.dragChildren = cards;
+    cards.forEach((c, i) => {
+      c.lift(i);
     });
   }
 
-  public dragCard(_card: Card, dragX: number, dragY: number): void {
-    // Set positions
-    for (let i = 0; i < this.dragChildren.length; i += 1) {
-      this.dragChildren[i].x = dragX;
-      this.dragChildren[i].y = dragY + i * STACK_DRAG_OFFSET;
+  private dragCard(dragX: number, dragY: number): void {
+    this.dragChildren.forEach((card, i) => {
+      card.setPosition(dragX, dragY + i * STACK_DRAG_OFFSET);
+    });
+  }
+
+  private dropCards(to: PileId): void {
+    if (this.dragChildren.length === 0) {
+      return;
+    }
+
+    if (this.deck.canMove(this.dragChildren, to)) {
+      this.commitMove(this.dragChildren, to);
+    } else if (this.deck.pileOf(this.dragChildren[0]) !== to) {
+      this.dragChildren.forEach((card) => {
+        card.flash();
+      });
     }
   }
 
-  // eslint-disable-next-line
-  public dropCard(card: Card, dropZone: Phaser.GameObjects.GameObject): void {
-    // Potentially unsafe!
-    const pileId = dropZone.name as PileId;
+  private dragCardEnd(): void {
+    // Settle dragged cards wherever they now belong. A rejected drop returns.
+    if (this.dragChildren.length > 0) {
+      this.deck.layout(this.deck.pileOf(this.dragChildren[0]), true);
+    }
+    this.dragChildren = [];
+  }
 
-    // Get top card on current stack
-    const topCard = this.deck.topCard(pileId);
-    const oldCardPile = card.pile;
-
-    // Empty stack
-    if (!topCard) {
-      if (
-        (card.value === 13 && TABLEAU_PILES.includes(pileId)) ||
-        (card.value === 1 && FOUNDATION_PILES.includes(pileId))
-      ) {
-        this.dropScore(pileId, card.pile);
-        card.reposition(pileId, 0);
+  /**
+   * A touch tap moves the card at once. A mouse needs a double-click, so a
+   * single click can still start a drag without moving anything.
+   */
+  private tapCard(card: Card, pointer: Phaser.Input.Pointer): void {
+    if (!pointer.wasTouch) {
+      const isDouble =
+        this.lastClick?.card === card &&
+        pointer.upTime - this.lastClick.time < DOUBLE_CLICK_MS;
+      this.lastClick = isDouble ? null : { card, time: pointer.upTime };
+      if (!isDouble) {
+        return;
       }
     }
 
-    // Tableau
-    else if (TABLEAU_PILES.includes(pileId)) {
-      if (
-        SUIT_COLOR[card.suit] !== SUIT_COLOR[topCard.suit] &&
-        card.value === topCard.value - 1
-      ) {
-        this.dropScore(pileId, card.pile);
-        card.reposition(pileId, topCard.position + 1);
-      }
+    if (this.won) {
+      return;
     }
 
-    // Foundation
-    else if (FOUNDATION_PILES.includes(pileId)) {
-      if (card.suit === topCard.suit && card.value === topCard.value + 1) {
-        this.dropScore(pileId, card.pile);
-        card.reposition(pileId, topCard.position + 1);
-      }
-    }
-
-    // Drop all other cards on top
-
-    for (let i = 1; i < this.dragChildren.length; i += 1) {
-      this.dragChildren[i].reposition(card.pile, card.position + i);
-    }
-
-    // Flip top card on past stack
-    const topCardNew = this.deck.topCard(oldCardPile);
-    if (topCardNew && topCardNew !== card && !topCardNew.flipped) {
-      topCardNew.flip(this);
-      this.flipScore(topCardNew.pile);
+    const move = this.deck.quickMove(card);
+    if (move === null) {
+      card.flash();
+    } else {
+      this.commitMove(move.cards, move.to);
     }
   }
 
-  public update(): void {
-    // Ensure score is within range
-    if (this.score < 0) {
-      this.score = 0;
+  private historyEntry(): HistoryEntry {
+    return {
+      board: this.deck.snapshot(),
+      moves: this.moves,
+      score: this.score,
+    };
+  }
+
+  private countMove(points: number): void {
+    this.startTime ??= this.time.now;
+    this.moves += 1;
+    this.addScore(points);
+  }
+
+  private addScore(points: number): void {
+    this.score = Math.max(0, this.score + points);
+  }
+
+  private commitMove(cards: readonly Card[], to: PileId): void {
+    this.history.push(this.historyEntry());
+    const move = this.deck.move(cards, to);
+    this.countMove(scoreMove(move));
+
+    this.deck.layout(move.from, true);
+    this.deck.layout(move.to, true);
+    this.afterMove();
+  }
+
+  /**
+   * Play safe cards to the foundations, then check for a win or a dead end.
+   */
+  private afterMove(): void {
+    let next = this.deck.nextAutoMove();
+    while (next) {
+      const move = this.deck.move([next.card], next.to);
+      this.addScore(scoreMove(move));
+      this.deck.layout(move.from, true);
+      this.deck.layout(move.to, true);
+      next = this.deck.nextAutoMove();
     }
 
-    // Win
-    const cardsOnFoundation = FOUNDATION_PILES.reduce(
-      (acc, pile) => acc + this.deck.countCards(pile),
-      0
-    );
-    if (cardsOnFoundation === 52) {
-      this.winText.setVisible(true);
+    if (this.deck.isWon()) {
+      this.win();
+    } else if (!this.deck.hasMoves()) {
+      this.panel.show("NO MOVES LEFT", ["Undo, Redeal or", "start a New Deal"]);
+    }
+  }
+
+  private undo(): void {
+    const entry = this.history.pop();
+    if (!entry || this.won) {
+      return;
     }
 
-    // Display lives
-    this.scoreText.setText(`SCORE: ${this.score}`);
+    this.deck.restore(entry.board);
+    this.moves = entry.moves;
+    this.score = entry.score;
+    this.panel.hide();
+    this.deck.layoutAll(true);
+  }
+
+  private elapsed(): number {
+    if (this.won) {
+      return this.finalTime;
+    }
+    return this.startTime === null ? 0 : this.time.now - this.startTime;
+  }
+
+  private win(): void {
+    this.finalTime = this.elapsed();
+    this.won = true;
+
+    this.showWinPanel(recordWin());
+    cascade(this, this.deck.cards);
+  }
+
+  private showWinPanel(stats: Stats): void {
+    this.panel.show("YOU WIN!", [
+      `SCORE ${this.score}  TIME ${formatTime(this.finalTime)}`,
+      `MOVES ${this.moves}`,
+      `WINS ${stats.wins}  LOSSES ${stats.losses}`,
+      `STREAK ${stats.streak}  BEST ${stats.bestStreak}`,
+    ]);
   }
 }

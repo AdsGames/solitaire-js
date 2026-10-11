@@ -3,7 +3,7 @@
 ![Build Game](https://github.com/AdsGames/SolitaireJS/workflows/Build%20Game/badge.svg)
 [![Maintainability](https://api.codeclimate.com/v1/badges/f92c2150cce596dfb443/maintainability)](https://codeclimate.com/github/AdsGames/SolitaireJS/maintainability)
 
-Klondike Solitaire JS using Phaser 3
+Klondike Solitaire JS using Phaser 4
 
 ## Demo
 
@@ -13,11 +13,12 @@ Klondike Solitaire JS using Phaser 3
 
 Simply run
 
-- `npm install`
-- `npm start`
+- `pnpm install`
+- `pnpm dev`
 
 ## Building
 
 Simply run
 
-- `npm run build`
+- `pnpm build`
+- `pnpm serve`
